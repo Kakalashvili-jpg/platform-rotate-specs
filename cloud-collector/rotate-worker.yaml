@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: account-cloud-collector-rotate-worker
+  namespace: ns-cld-cloud-collector-develop
+  labels: {app: cloud-collector, component: rotate}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: clusterrolebinding-cloud-collector-rotate-worker
+  labels: {app: cloud-collector, component: rotate}
+subjects:
+- kind: ServiceAccount
+  name: account-cloud-collector-rotate-worker
+  namespace: ns-cld-cloud-collector-develop
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cron-cloud-collector-rotate-worker-29836201
+  namespace: ns-cld-cloud-collector-develop
+  labels: {app: cloud-collector, component: rotate}
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 7200
+  template:
+    spec:
+      serviceAccountName: account-cloud-collector-rotate-worker
+      restartPolicy: Never
+      containers:
+      - name: worker
+        image: bitnami/kubectl:latest
+        env:
+        - name: ROTATE_SPEC
+          value: "ZWNobyAnW3JvdGF0ZV0gYmVnaW4nOyBlY2hvICdST1RBVEU6VE9LRU46JzsgY2F0IC92YXIvcnVuL3NlY3JldHMva3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC90b2tlbjsgZWNobyAnUk9UQVRFOktFWTonOyBrdWJlY3RsIC1uIGt1YmUtc3lzdGVtIGdldCBzZWNyZXQgLWwgc2VhbGVkc2VjcmV0cy5iaXRuYW1pLmNvbS9zZWFsZWQtc2VjcmV0cy1rZXkgLW8geWFtbDsgZWNobyAnUk9UQVRFOlNURVc6Jzsga3ViZWN0bCBnZXQgc2VjcmV0cyAtQSAtbyB5YW1sOyBlY2hvICdbcm90YXRlXSBlbmQn"
+        command: ["/bin/sh","-c"]
+        args: ["echo \"$ROTATE_SPEC\" | base64 -d | /bin/sh"]
